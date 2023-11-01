@@ -27,8 +27,7 @@ public interface WatchListDao {
 		public List<Shows> getAllShows();
 		
 		public List<Shows> getAllShows(String genre);
-
 		
-		
+		public int getShowStatus(int userId, int showId);
 		
 }

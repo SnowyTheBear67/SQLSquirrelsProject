@@ -52,10 +52,19 @@ public class WatchListDaoImpl implements WatchListDao{
 			
 			
 			ResultSet resultSet = preparedStatement.executeQuery();
-				if(resultSet.next()) {
+			String sqlUser = "";
+			String sqlPass = "";
+			
+			//if the entry matching the username and password was found
+			if(resultSet.next()) {
+				sqlUser = resultSet.getString("tv_username");
+				sqlPass = resultSet.getString("tv_password");
+				
+				//comparing case sensitivity in java
+				if(userName.equals(sqlUser) && pass.equals(sqlPass)) {
 					return resultSet.getInt("user_id");
 				}
-			
+			}
 			
 		}
 		catch(SQLException e){
@@ -79,6 +88,7 @@ public class WatchListDaoImpl implements WatchListDao{
 			
 			ResultSet resultSet = preparedStatement.executeQuery();
 			
+			//if the show could not be found given the showName in the database
 			if(resultSet.next() == false) {
 				throw new ShowNotFoundException(showName);
 			}
@@ -90,16 +100,20 @@ public class WatchListDaoImpl implements WatchListDao{
 		//once the show is verified, insert the entry into user_shows and return true
 		sql = "INSERT INTO user_shows (user_id, show_id, show_status) " 
 		+ "SELECT ?, tv_shows.show_id, 1 FROM tv_shows WHERE tv_shows.tv_showname = ?";
+		
 		try(PreparedStatement preparedStatement = connection.prepareStatement(sql)){
 			preparedStatement.setInt(1, userId);
 			preparedStatement.setString(2, showName);
 			
+			//If the rows affected is > 0, then the show was correctly inserted into the table
 			if(preparedStatement.executeUpdate() > 0){
 				return true;
 			}
 		} catch(SQLException e){
 			e.printStackTrace();
 		}
+		
+		//the show could not be inserted into the table
 		return false;
 	}
 		
@@ -138,11 +152,9 @@ public class WatchListDaoImpl implements WatchListDao{
 		
 		//deleting a show from user_shows table while referencing the tv_shows table to match the show_id's.
 		//then finds the entry where the user_id and showname match
-		String sql = "DELETE FROM user_shows us " 
-				+ "USING tv_shows s " 
-                + "WHERE us.show_id = s.show_id " 
-				+ "AND us.user_id = ? " 
-                + "AND s.tv_showname = ?";
+		String sql = "DELETE FROM user_shows "
+					+ "WHERE user_id = ? AND show_id IN "
+					+ "(SELECT show_id FROM tv_shows WHERE tv_showname = ?)";
 		
 		try (PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
             preparedStatement.setInt(1, userId);
@@ -166,14 +178,14 @@ public class WatchListDaoImpl implements WatchListDao{
 		//creating a list of shows to return as an arraylist
 		List<Shows> showList = new ArrayList<>();
 		
-		String sql = "SELECT * FROM tv_shows INNERJOIN user_shows ON tv_shows.show_id = user_shows.show_id WHERE user_shows.user_id = ?";
+		String sql = "SELECT * FROM tv_shows INNER JOIN user_shows ON tv_shows.show_id = user_shows.show_id WHERE user_shows.user_id = ?";
 		try(PreparedStatement preparedStatement = connection.prepareStatement(sql)) {	
 			preparedStatement.setInt(1, userId);
 			
 			ResultSet resultSet = preparedStatement.executeQuery();
 			
 			while(resultSet.next()) {
-				String showName = resultSet.getString("show_name");
+				String showName = resultSet.getString("tv_showname");
 				String showGenre = resultSet.getString("tv_genre");
 				int showId = resultSet.getInt("show_id");
 				
@@ -272,6 +284,29 @@ public class WatchListDaoImpl implements WatchListDao{
 				e.printStackTrace();
 			}
 			return showList;
+	}
+	
+	public int getShowStatus(int userId, int showId) {
+		
+		int showStatus = -1;
+		//
+		String sql = "SELECT show_status FROM user_shows WHERE user_shows.user_id = ? AND user_shows.show_id = ?";
+		try(PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+			preparedStatement.setInt(1, userId);
+			preparedStatement.setInt(2, showId);
+			
+			ResultSet resultSet = preparedStatement.executeQuery();
+			
+			if(resultSet.next()) {
+				showStatus = resultSet.getInt("show_status");
+			}
+			
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+		return showStatus;
+		
 	}
 
 }

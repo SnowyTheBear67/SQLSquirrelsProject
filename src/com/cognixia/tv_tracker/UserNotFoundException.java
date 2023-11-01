@@ -2,8 +2,11 @@ package com.cognixia.tv_tracker;
 
 public class UserNotFoundException extends Exception {
 	
-	private static String userName; //holds the name of the user that will be displayed for the exception when user is not found
-	
+	/**
+	 * for synchronization when calling the exception
+	 */
+	private static final long serialVersionUID = 1L;
+
 	//construct the exception that is thrown when user is not found
 	public UserNotFoundException(String userName) {
 		

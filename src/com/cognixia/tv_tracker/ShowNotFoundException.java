@@ -2,8 +2,11 @@ package com.cognixia.tv_tracker;
 
 public class ShowNotFoundException extends Exception {
 	
-	private static String showName; // holds the name of the show that could not be found
-	
+	/**
+	 * for synchronization when calling the exception
+	 */
+	private static final long serialVersionUID = 1L;
+
 	// construct exception to be thrown when shows is not found
 	public ShowNotFoundException(String showName)
 	{
